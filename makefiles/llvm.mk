@@ -3,11 +3,11 @@ $(error Use the main Makefile)
 endif
 
 SUBPROJECTS   += llvm
-LLVM_MAJOR_V  := 12
+LLVM_MAJOR_V  := 13
 LLVM_MINOR_V  := 0
 LLVM_PATCH_V  := 0
 LLVM_VERSION  := $(LLVM_MAJOR_V).$(LLVM_MINOR_V).$(LLVM_PATCH_V)
-SWIFT_VERSION := 5.5.2
+SWIFT_VERSION := 5.6.1
 SWIFT_SUFFIX  := RELEASE
 DEB_SWIFT_V   ?= $(SWIFT_VERSION)~$(SWIFT_SUFFIX)
 DEB_LLVM_V    ?= $(LLVM_VERSION)~$(DEB_SWIFT_V)
@@ -147,7 +147,7 @@ endif
 	+unset MACOSX_DEPLOYMENT_TARGET IPHONEOS_DEPLOYMENT_TARGET APPLETVOS_DEPLOYMENT_TARGET WATCHOS_DEPLOYMENT_TARGET && \
 		$(MAKE) -C $(BUILD_WORK)/llvm/build-compiler-rt install-compiler-rt \
 		DESTDIR="$(BUILD_STAGE)/llvm"
-	$(call AFTER_BUILD)
+	$(call AFTER_BUILD,,,$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib)
 endif
 
 llvm-package: llvm-stage
@@ -192,7 +192,7 @@ llvm-package: llvm-stage
 	# llvm.mk Prep libllvm-polly$(LLVM_MAJOR_V)
 	mkdir -p $(BUILD_DIST)/libllvm-polly$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{include,lib}
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/include/polly $(BUILD_DIST)/libllvm-polly$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include
-	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/{libPollyISL.a,LLVMPolly.so,libPollyPPCG.a,libPolly.a} $(BUILD_DIST)/libllvm-polly$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
+	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/{libPollyISL.a,libPolly.a} $(BUILD_DIST)/libllvm-polly$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/cmake/polly $(BUILD_DIST)/libllvm-polly$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib
 
 	# llvm.mk Prep libclang-common-$(LLVM_MAJOR_V)-dev
