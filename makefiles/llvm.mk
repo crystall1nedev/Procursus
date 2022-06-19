@@ -123,8 +123,6 @@ ifeq ($(wildcard $(BUILD_WORK)/llvm/build/.build_complete),)
 		-DSWIFT_BUILD_REMOTE_MIRROR=FALSE \
 		-DSWIFT_BUILD_DYNAMIC_STDLIB=FALSE \
 		-DSWIFT_BUILD_STDLIB_EXTRA_TOOLCHAIN_CONTENT=FALSE \
-		-DC_INCLUDE_DIRS="$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)$(MEMO_ALT_PREFIX)/include:$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include:$(ON_DEVICE_SDK_PATH)/usr/include:/usr/local/include:/usr/include" \
-		-DDEFAULT_SYSROOT="$(ON_DEVICE_SDK_PATH)" \
 		../llvm
 	+$(MAKE) -C $(BUILD_WORK)/llvm/build install \
 		DESTDIR="$(BUILD_STAGE)/llvm"
@@ -147,6 +145,17 @@ endif
 	+unset MACOSX_DEPLOYMENT_TARGET IPHONEOS_DEPLOYMENT_TARGET APPLETVOS_DEPLOYMENT_TARGET WATCHOS_DEPLOYMENT_TARGET && \
 		$(MAKE) -C $(BUILD_WORK)/llvm/build-compiler-rt install-compiler-rt \
 		DESTDIR="$(BUILD_STAGE)/llvm"
+	# Let's build wrappers now
+	mkdir -p $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_MISC)/llvm/wrapper.c -o $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-$(LLVM_MAJOR_V) \
+		-DTOOL=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/clang\" -DDEFAULT_SYSROOT=\"$(ON_DEVICE_SDK_PATH)\" \
+		-DEXTRA_CPATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include\" -DEXTRA_LIBRARY_PATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib\"
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_MISC)/llvm/wrapper.c -o $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang++-$(LLVM_MAJOR_V) \
+		-DTOOL=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/clang++\" -DDEFAULT_SYSROOT=\"$(ON_DEVICE_SDK_PATH)\" \
+		-DEXTRA_CPATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include\" -DEXTRA_LIBRARY_PATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib\"
+	$(CC) $(CFLAGS) $(LDFLAGS) $(BUILD_MISC)/llvm/wrapper.c -o $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-cpp-$(LLVM_MAJOR_V) \
+		-DTOOL=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/clang-cpp\" -DDEFAULT_SYSROOT=\"$(ON_DEVICE_SDK_PATH)\" \
+		-DEXTRA_CPATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/include\" -DEXTRA_LIBRARY_PATH=\"$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib\"
 	$(call AFTER_BUILD,,,$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib)
 endif
 
@@ -159,17 +168,15 @@ llvm-package: llvm-stage
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin/clang{,-$(LLVM_MAJOR_V),++,-cpp} $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/bin
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/share/clang/bash-autocomplete.sh $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/share/clang
 	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/cmake/clang $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/lib/llvm-$(LLVM_MAJOR_V)/lib/cmake
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang-$(LLVM_MAJOR_V) $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-$(LLVM_MAJOR_V)
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang-cpp $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-cpp-$(LLVM_MAJOR_V)
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang++ $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang++-$(LLVM_MAJOR_V)
+	cp -a $(BUILD_STAGE)/llvm/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang{,++,-cpp}-$(LLVM_MAJOR_V) $(BUILD_DIST)/clang-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/
 
 	# llvm.mk Prep clang
 	mkdir -p $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang++ $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang++
+	$(LN_S) clang-$(LLVM_MAJOR_V) $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang
+	$(LN_S) clang++-$(LLVM_MAJOR_V) $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang++
 	$(LN_S) clang $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/cc
 	$(LN_S) clang++ $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/c++
-	$(LN_S) ../lib/llvm-$(LLVM_MAJOR_V)/bin/clang-cpp $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-cpp
+	$(LN_S) clang-cpp-$(LLVM_MAJOR_V) $(BUILD_DIST)/clang/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/bin/clang-cpp
 
 	# llvm.mk Prep debugserver-$(LLVM_MAJOR_V)
 	mkdir -p $(BUILD_DIST)/debugserver-$(LLVM_MAJOR_V)/$(MEMO_PREFIX)$(MEMO_SUB_PREFIX)/{bin,lib/llvm-$(LLVM_MAJOR_V)/bin}
